@@ -145,7 +145,51 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # get the start state
+    start_state = problem.getStartState()
+
+    # initialize a path list with start node
+    path = [(start_state, "End", 0)]
+
+    # maintain visited array to keep track of visited nodes
+    visited = set()
+
+    # maintain a search_space for traversing the graph nodes
+    search_space = util.PriorityQueue()
+
+    # push the current path in the search_space
+    search_space.push(path, 0)
+
+    # until the search_space gets empty, iterate
+    while(search_space.isEmpty() == 0):
+        # get details from current path, operate on it, push it back in the search_space
+        local_path = search_space.pop()
+        current_state = local_path[len(local_path)-1][0]
+        # print("CURRENT STATE: " + str(current_state) )
+
+        # check if the current state is the goal state
+        if problem.isGoalState(current_state):
+            # print("GOAL: " + str(current_state) )
+            return [i[1] for i in local_path][1:]
+
+        # check if current state has been previously visited or not
+        if current_state not in visited:
+            # mark current state as visited
+            visited.add(current_state)
+
+            # iterate through all the unvisited successors and add their paths to search_space
+            for successor in problem.getSuccessors(current_state):
+                if successor not in visited:
+                    new_path = local_path[:]
+                    new_node_cost = successor[2] + local_path[len(local_path)-1][2]
+                    new_path.append((successor[0], successor[1], new_node_cost))
+                    search_space.push(new_path, new_node_cost)
+
+    return []
+
+
+    # util.raiseNotDefined()
 
 def nullHeuristic(state, problem=None):
     """
@@ -157,7 +201,48 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # get the start state
+    start_state = problem.getStartState()
+
+    # initialize a path list with start node
+    path = [(start_state, "End", 0)]
+
+    # maintain visited array to keep track of visited nodes
+    visited = set()
+
+    # maintain a search_space for traversing the graph nodes
+    search_space = util.PriorityQueue()
+
+    # push the current path in the search_space
+    search_space.push(path, heuristic(start_state, problem))
+
+    # until the search_space gets empty, iterate
+    while(search_space.isEmpty() == 0):
+        # get details from current path, operate on it, push it back in the search_space
+        local_path = search_space.pop()
+        current_state = local_path[len(local_path)-1][0]
+        # print("CURRENT STATE: " + str(current_state) )
+
+        # check if the current state is the goal state
+        if problem.isGoalState(current_state):
+            return [i[1] for i in local_path][1:]
+
+        # check if current state has been previously visited or not
+        if current_state not in visited:
+            # mark current state as visited
+            visited.add(current_state)
+
+            # iterate through all the unvisited successors and add their paths to search_space
+            for successor in problem.getSuccessors(current_state):
+                if successor not in visited:
+                    new_path = local_path[:]
+                    new_node_cost = successor[2] + local_path[len(local_path)-1][2]
+                    new_path.append((successor[0], successor[1], new_node_cost))
+                    search_space.push(new_path, heuristic(successor[0], problem) + new_node_cost)
+
+    return []
+    # util.raiseNotDefined()
 
 
 # Abbreviations

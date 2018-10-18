@@ -112,7 +112,7 @@ class SearchAgent(Agent):
         if self.searchFunction == None: raise Exception("No search function provided for SearchAgent")
         starttime = time.time()
         problem = self.searchType(state) # Makes a new search problem
-        self.actions  = self.searchFunction(problem) # Find a path
+        self.actions = self.searchFunction(problem) # Find a path
         totalCost = problem.getCostOfActions(self.actions)
         print('Path found with total cost of %d in %.1f seconds' % (totalCost, time.time() - starttime))
         if '_expanded' in dir(problem): print('Search nodes expanded: %d' % problem._expanded)
@@ -273,7 +273,7 @@ class CornersProblem(search.SearchProblem):
     You must select a suitable state space and successor function
     """
 
-    def __init__(self, startingGameState):
+    def __init__(self, startingGameState, costFn = lambda x: 1):
         """
         Stores the walls, pacman's starting position and corners.
         """
@@ -288,6 +288,11 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        self.costFn = costFn
+        self.unvisited_corners = list(self.corners)
+
+        # For display purposes
+        self._visited, self._visitedlist, self._expanded = {}, [], 0
 
     def getStartState(self):
         """
@@ -295,14 +300,25 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        # store a binary array to encode information about number of goals visited
+        goal_states = [0] * len(self.corners)
+        for i in range(len(self.corners)):
+            if self.startingPosition == self.corners[i]:
+                goal_states[i] = 1
+
+        return (self.startingPosition, tuple(goal_states))
+        # util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # return true when all the goal states are explored
+        # happens when goal_states list is [1,1,1,1]
+        return 0 not in state[1]
+        # util.raiseNotDefined()
 
     def getSuccessors(self, state):
         """
@@ -316,17 +332,33 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        (state_position, goal_states) = state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
+            x,y = state_position
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
 
+            if not hitsWall:
+                # if the successor state is goal state, update goal_states
+                successor_goal_state = list(goal_states)
+                for i in range(len(self.corners)):
+                    if self.corners[i] == (nextx, nexty):
+                        successor_goal_state[i] = 1
+                nextState = ((nextx, nexty), tuple(successor_goal_state))
+                cost = self.costFn(nextState)
+                successors.append((nextState, action, cost))
+
         self._expanded += 1 # DO NOT CHANGE
+
+        if state not in self._visited:
+            self._visited[state] = True
+            self._visitedlist.append(state)
+
         return successors
 
     def getCostOfActions(self, actions):
@@ -360,7 +392,28 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+
+    # get the position and unvisited corners
+    position = state[0]
+    unvisited = state[1]
+    unvisited_corners = [j for i,j in enumerate(corners) if unvisited[i] == 0]
+
+    # if all the corners are visited, return 0
+    if len(unvisited_corners) == 0:
+        return 0
+
+    # maintain a `cost` variable to store heuristic
+    # update the cost
+    cost = 0
+    while len(unvisited_corners) != 0:
+        l1_dist = [(i, util.manhattanDistance(i, position)) for i in unvisited_corners]
+        closest_corner, closest_corner_cost = min(l1_dist, key=lambda x:x[1])
+        cost += closest_corner_cost
+        position = closest_corner
+        unvisited_corners.remove(closest_corner)
+
+    return cost
+    # return 0 # Default to trivial solution
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
